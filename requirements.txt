@@ -1,0 +1,10 @@
+streamlit
+scikit-learn
+tensorflow
+gensim
+nltk
+numpy
+pandas
+joblib
+keras
+h5py
