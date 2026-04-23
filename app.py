@@ -1,12 +1,9 @@
 import streamlit as st
-import joblib
 import pickle
 import numpy as np
 import re
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
-from tensorflow.keras.models import load_model
-from tensorflow.keras.preprocessing.sequence import pad_sequences
 import nltk
 
 nltk.download('stopwords', quiet=True)
@@ -15,11 +12,16 @@ nltk.download('wordnet', quiet=True)
 # Load models
 @st.cache_resource
 def load_models():
-    svm_model   = joblib.load('best_ml_model.pkl')
-    vectorizer  = joblib.load('tfidf_vectorizer.pkl')
-    lstm_model  = load_model('lstm_model.h5')
+    from sklearn.svm import LinearSVC
+    from tensorflow.keras.models import load_model
+
+    with open('tfidf_vectorizer.pkl', 'rb') as f:
+        vectorizer = pickle.load(f)
+    with open('best_ml_model.pkl', 'rb') as f:
+        svm_model = pickle.load(f)
     with open('tokenizer.pkl', 'rb') as f:
         tokenizer = pickle.load(f)
+    lstm_model = load_model('lstm_model.h5')
     return svm_model, vectorizer, lstm_model, tokenizer
 
 svm_model, vectorizer, lstm_model, tokenizer = load_models()
@@ -45,11 +47,12 @@ def predict(text, model_choice):
     colors  = {0: 'red', 1: 'orange', 2: 'green'}
 
     if model_choice == "SVM (TF-IDF)":
+        from scipy.sparse import csr_matrix
         vec  = vectorizer.transform([cleaned])
         pred = svm_model.predict(vec)[0]
         return labels[pred], colors[pred], None
-
-    else:  # LSTM
+    else:
+        from tensorflow.keras.preprocessing.sequence import pad_sequences
         seq  = pad_sequences(tokenizer.texts_to_sequences([cleaned]), maxlen=50)
         prob = lstm_model.predict(seq)[0]
         pred = np.argmax(prob)
@@ -70,9 +73,4 @@ if st.button("Analyze ↗"):
         label, color, probs = predict(user_input, model_choice)
         st.markdown(f"### Prediction: :{color}[{label}]")
 
-        if probs is not None:
-            st.markdown("**Confidence scores:**")
-            col1, col2, col3 = st.columns(3)
-            col1.metric("😠 Negative", f"{probs[0]:.2%}")
-            col2.metric("😐 Neutral",  f"{probs[1]:.2%}")
-            col3.metric("😊 Positive", f"{probs[2]:.2%}")
+        if probs is not None
